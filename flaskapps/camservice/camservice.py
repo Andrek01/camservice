@@ -9,10 +9,16 @@ from camera import BaseCamera
 # Globals for Handling the Cams
 # ****************************
 myStreams = {}
+'''
 myStreams['ID1'] = 'rtsp://akohler:8x+0bzT9@192.168.178.9/1'
 myStreams['ID2'] = 'rtsp://admin:christine@192.168.178.104:554/h264Preview_01_sub'
 myStreams['ID3'] = 'rtsp://admin:christine@192.168.178.104:554/h264Preview_01_main'
 myStreams['ID4'] = 'rtsp://akohler:8x+0bzT9@192.168.178.9/0'
+'''
+
+myStreams['ID1'] = 'http://User:FlitzPiep3@101.64.18.101:8008/axis-cgi/mjpg/video.cgi'
+myStreams['ID2'] = 'http://User:FlitzPiep3@101.64.18.105/GetData.cgi?Status=0'
+myStreams['ID3'] = 'http://User:FlitzPiep3@101.64.18.103/axis-cgi/mjpg/video.cgi'
 
 myActiveCams = []
 myActiveCamNames = []

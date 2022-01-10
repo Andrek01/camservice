@@ -1,5 +1,6 @@
 #!/bin/bash
 actPath="${PWD##*/}"
+echo $actPath
 sed -e s/smartvisu_dir/$actPath/g ./lib/flaskapps/camservice/scripts/camservice.wsgi > ./camservice.tmp
 mv ./camservice.tmp ./lib/flaskapps/camservice/camservice.wsgi
 echo "Installing virtual environment for Python3"

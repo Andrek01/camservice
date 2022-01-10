@@ -3,6 +3,7 @@ import cv2
 import datetime
 import time
 import threading
+import requests
 try:
     from greenlet import getcurrent as get_ident
 except ImportError:
@@ -87,20 +88,32 @@ class BaseCamera(object):
     #@staticmethod
     def frames(self):
         print ('opening Stream :' +self.source )
-        camera = cv2.VideoCapture(self.source)
-        if not camera.isOpened():
-            raise RuntimeError('Could not start camera.')
+        if 'http' in self.source:
+            stream = requests.get(self.source,stream=True)
+            bytes = b''
+            for chunk in stream.iter_content(chunk_size=1024):
+                bytes += chunk
+                a = bytes.find(b'\xff\xd8')
+                b = bytes.find(b'\xff\xd9')
+                if a != -1 and b != -1:
+                    jpg = bytes[a:b + 2]
+                    bytes = bytes[b + 2:]
+                    yield jpg 
+        else:        
+            camera = cv2.VideoCapture(self.source)
+            if not camera.isOpened():
+                raise RuntimeError('Could not start camera.')
 
-        while True:
-            # read current frame
-            _, img = camera.read()
-            #imS = cv2.resize(img, (800, 600))
-            imS = img
-            actTime = datetime.datetime.now().strftime("%d.%m.%Y / %H:%M:%S")
-            font = cv2.FONT_HERSHEY_SIMPLEX
-            cv2.putText(imS, actTime, (10,30), font, 0.4, (248, 248, 255), 1, cv2.LINE_AA)
-            # encode as a jpeg image and return it
-            yield cv2.imencode('.jpg', imS)[1].tobytes()
+            while True:
+                # read current frame
+                _, img = camera.read()
+                #imS = cv2.resize(img, (800, 600))
+                imS = img
+                actTime = datetime.datetime.now().strftime("%d.%m.%Y / %H:%M:%S")
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                cv2.putText(imS, actTime, (10,30), font, 0.4, (248, 248, 255), 1, cv2.LINE_AA)
+                # encode as a jpeg image and return it
+                yield cv2.imencode('.jpg', imS)[1].tobytes()
 
     #@classmethod
     def _thread(self):
