@@ -2,7 +2,8 @@
 from importlib import import_module
 import os
 import requests
-from flask import Flask, render_template, Response, request
+from flask import Flask, render_template, Response, request, make_response
+import cv2
 
 from camera import BaseCamera
 
@@ -17,6 +18,8 @@ print (app.config.get('SERVER_NAME', 'some.sensible.default.domain'))
 
 filename = app.instance_path
 print('Instance_Path : ' + filename)
+myTempPath = "/".join(app.instance_path.split("/")[:-1])+"/tmp/"
+print ('Tmp-Path : ' + myTempPath)
 myResponse = requests.get('http://127.0.0.1/smartvisu3.2/lib/flaskapps/camservice/camservice.php?command=get_page_path')
 myActPages = myResponse.content.decode()
 print ('active Pages : ' + myActPages)
@@ -34,9 +37,9 @@ myStreams['ID1'] = 'http://User:FlitzPiep3@101.64.18.101:8008/axis-cgi/mjpg/vide
 myStreams['ID2'] = 'http://User:FlitzPiep3@101.64.18.105/GetData.cgi?Status=0'
 myStreams['ID3'] = 'http://User:FlitzPiep3@101.64.18.103/axis-cgi/mjpg/video.cgi'
 
-myActiveCams = []
-myActiveCamNames = []
 myClients = []
+myActiveCams     = []
+myActiveCamNames = []
 
 
 @app.route('/')
@@ -55,9 +58,9 @@ def gen(camera):
         yield b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n--frame\r\n'
 
 
+
 @app.route('/video_feed')
 def video_feed():
-    print ('Filename : ' + app.instance_path)
     """Video streaming route. Put this in the src attribute of an img tag."""
     print ('ip : '+ request.remote_addr + 'port : ' + str(request.environ.get('REMOTE_PORT')))
     print ('got Args : ' + str(request.args))
@@ -66,22 +69,49 @@ def video_feed():
     myCmd    = request.args.get('command')
     print ('got Stream ID:'+ str(myStream))
     print ('got Command  :'+ str(myCmd))
+    print (str(myActiveCams) + ' / ' + str(myActiveCamNames))
+
+
+
     if myCmd == 'play':
+        if myStream in myActiveCamNames:
+            if myActiveCams[myActiveCamNames.index(myStream)].alive == False:
+                myCam = myActiveCams[myActiveCamNames.index(myStream)]
+                myActiveCams.remove(myCam)
+                myActiveCamNames.remove(myStream)
+
+                print (str(myActiveCams) + ' / ' + str(myActiveCamNames))
+
+
         if myStream in myActiveCamNames:
             myCam = myActiveCams[myActiveCamNames.index(myStream)]
         else: # add new Cam
             print ('Setup new Cam for : '+myStreams[myStream])
             myActiveCamNames.append(myStream)
-            myActiveCams.append(BaseCamera(myStreams[myStream]))
+            myActiveCams.append(BaseCamera(myStreams[myStream],myStream,myTempPath))
             myCam = myActiveCams[myActiveCamNames.index(myStream)]
 
         myClients.append(myClient)
         print ('act.Clients : ' + str(myClients))
-        return Response(gen(myCam),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
+        return Response(gen(myCam), mimetype='multipart/x-mixed-replace; boundary=frame')
+
+
     if myCmd == 'stop':
         myClients.remove(myClient)
+        img = cv2.imread(myTempPath+myStream+'.jpg')
+        dimensions = img.shape
+        x_Text = int(dimensions[1]/2)-int(dimensions[1]*0.37)
+        y_Text = int(dimensions[0]/2)-50
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_Thickness = int(dimensions[1]/100)
+        font_Size      = round(dimensions[1]/400,1)
+        cv2.putText(img, 'to be continued...', (x_Text,y_Text), font, font_Size, (248, 248, 255), font_Thickness, cv2.LINE_AA)
         print ('act.Clients : ' + str(myClients))
+        ret, buffer = cv2.imencode('.jpg', img)
+        myResponse = make_response(buffer.tobytes())
+        myResponse.headers['Content-Type'] = 'image/png'
+
+        return myResponse
 
 if __name__ == '__main__':
     app.run()

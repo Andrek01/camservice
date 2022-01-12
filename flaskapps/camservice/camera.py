@@ -4,6 +4,8 @@ import datetime
 import time
 import threading
 import requests
+import numpy as np
+
 try:
     from greenlet import getcurrent as get_ident
 except ImportError:
@@ -57,8 +59,11 @@ class CameraEvent(object):
 
 class BaseCamera(object):
 
-    def __init__(self,source):
+    def __init__(self,source,StreamID,tmpPath):
         self.source = source
+        self.StreamID = StreamID
+        self.tmpPath  = tmpPath
+        self.alive = True
         self.thread = None  # background thread that reads frames from camera
         self.frame = None  # current frame is stored here by background thread
         self.last_access = 0  # time of last client access to the camera
@@ -88,6 +93,7 @@ class BaseCamera(object):
     #@staticmethod
     def frames(self):
         print ('opening Stream :' +self.source )
+        first_run = True
         if 'http' in self.source:
             stream = requests.get(self.source,stream=True)
             bytes = b''
@@ -98,6 +104,11 @@ class BaseCamera(object):
                 if a != -1 and b != -1:
                     jpg = bytes[a:b + 2]
                     bytes = bytes[b + 2:]
+                    # If first Frame take a snapshot
+                    if first_run == True:
+                        first_run = False
+                        img = cv2.imdecode(np.frombuffer(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
+                        cv2.imwrite(self.tmpPath+self.StreamID+'.jpg',img)
                     yield jpg 
         else:        
             camera = cv2.VideoCapture(self.source)
@@ -109,6 +120,11 @@ class BaseCamera(object):
                 _, img = camera.read()
                 #imS = cv2.resize(img, (800, 600))
                 imS = img
+                # If first Frame take a snapshot
+                if first_run == True:
+                    first_run = False
+                    cv2.imwrite(self.tmpPath+self.StreamID+'.jpg',img)
+                
                 actTime = datetime.datetime.now().strftime("%d.%m.%Y / %H:%M:%S")
                 font = cv2.FONT_HERSHEY_SIMPLEX
                 cv2.putText(imS, actTime, (10,30), font, 0.4, (248, 248, 255), 1, cv2.LINE_AA)
@@ -129,6 +145,7 @@ class BaseCamera(object):
             # the last 10 seconds then stop the thread
             if time.time() - self.last_access > 10:
                 frames_iterator.close()
-                print('Stopping camera thread due to inactivity.')
+                print('Stopping camera thread : '+ self.StreamID + '  due to inactivity.')
+                self.alive = False
                 break
         self.thread = None
