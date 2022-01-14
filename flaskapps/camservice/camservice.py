@@ -4,8 +4,9 @@ import os
 import requests
 from flask import Flask, render_template, Response, request, make_response
 import cv2
-
+import time
 from camera import BaseCamera
+import uuid
 
 # ****************************
 # Globals for Handling the Cams
@@ -40,7 +41,31 @@ myStreams['ID3'] = 'http://User:FlitzPiep3@101.64.18.103/axis-cgi/mjpg/video.cgi
 myClients = []
 myActiveCams     = []
 myActiveCamNames = []
+myLock = False
 
+
+@app.after_request
+def response_processor(response):
+    # Prepare all the local variables you need since the request context
+    # will be gone in the callback function
+    global myClients
+    myId = uuid.uuid4().hex
+    myClients.append(myId)
+    response.headers["X-API-KEY"] = myId 
+    print ('act.Clients : ' + str(myClients))
+
+    @response.call_on_close
+    def process_after_request():
+        # Do whatever is necessary here
+        time.sleep(0.5)
+        myId = response.headers['X-API-KEY']
+        print ('after_request - ' + str(myId))
+        global myClients
+        myClients.remove(myId)
+        print ('act.Clients : ' + str(myClients))
+        pass
+
+    return response
 
 @app.route('/')
 def index():
@@ -72,8 +97,10 @@ def video_feed():
     print (str(myActiveCams) + ' / ' + str(myActiveCamNames))
 
 
-
+    global myLock
     if myCmd == 'play':
+        while myLock == True:
+            time.sleep(0.1)
         if myStream in myActiveCamNames:
             if myActiveCams[myActiveCamNames.index(myStream)].alive == False:
                 myCam = myActiveCams[myActiveCamNames.index(myStream)]
@@ -86,18 +113,20 @@ def video_feed():
         if myStream in myActiveCamNames:
             myCam = myActiveCams[myActiveCamNames.index(myStream)]
         else: # add new Cam
+            myLock = True
             print ('Setup new Cam for : '+myStreams[myStream])
             myActiveCamNames.append(myStream)
             myActiveCams.append(BaseCamera(myStreams[myStream],myStream,myTempPath))
             myCam = myActiveCams[myActiveCamNames.index(myStream)]
+            myLock = False
 
-        myClients.append(myClient)
-        print ('act.Clients : ' + str(myClients))
+        #myClients.append(myClient)
+        #print ('act.Clients : ' + str(myClients))
         return Response(gen(myCam), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
     if myCmd == 'stop':
-        myClients.remove(myClient)
+        #myClients.remove(myClient)
         img = cv2.imread(myTempPath+myStream+'.jpg')
         dimensions = img.shape
         x_Text = int(dimensions[1]/2)-int(dimensions[1]*0.37)

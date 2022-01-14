@@ -93,7 +93,7 @@ class BaseCamera(object):
     #@staticmethod
     def frames(self):
         print ('opening Stream :' +self.source )
-        first_run = True
+        self.first_run = True
         if 'http' in self.source:
             stream = requests.get(self.source,stream=True)
             bytes = b''
@@ -105,8 +105,9 @@ class BaseCamera(object):
                     jpg = bytes[a:b + 2]
                     bytes = bytes[b + 2:]
                     # If first Frame take a snapshot
-                    if first_run == True:
-                        first_run = False
+                    if self.first_run == True:
+                        print ('took a snapshot !!')
+                        self.first_run = False
                         img = cv2.imdecode(np.frombuffer(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
                         cv2.imwrite(self.tmpPath+self.StreamID+'.jpg',img)
                     yield jpg 
