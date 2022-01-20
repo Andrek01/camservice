@@ -1,12 +1,15 @@
 #!/usr/bin/env python
-from importlib import import_module
+#from importlib import import_module
 import os
 import requests
-from flask import Flask, render_template, Response, request, make_response
+from flask import Flask, render_template, Response, request, make_response, jsonify
 import cv2
 import time
 from camera import BaseCamera
 import uuid
+import threading, datetime
+import psutil
+import io, json
 
 # ****************************
 # Globals for Handling the Cams
@@ -23,46 +26,136 @@ myTempPath = "/".join(app.instance_path.split("/")[:-1])+"/tmp/"
 print ('Tmp-Path : ' + myTempPath)
 myResponse = requests.get('http://127.0.0.1/smartvisu3.2/lib/flaskapps/camservice/camservice.php?command=get_page_path')
 myActPages = myResponse.content.decode()
+myActPages = myActPages.split("\n")[0]
 print ('active Pages : ' + myActPages)
 
-
+smartvisu_dir = 'smartvisu3.2'
+'''
 myStreams = {}
-'''
-myStreams['ID1'] = 'rtsp://akohler:8x+0bzT9@192.168.178.9/1'
-myStreams['ID2'] = 'rtsp://admin:christine@192.168.178.104:554/h264Preview_01_sub'
-myStreams['ID3'] = 'rtsp://admin:christine@192.168.178.104:554/h264Preview_01_main'
-myStreams['ID4'] = 'rtsp://akohler:8x+0bzT9@192.168.178.9/0'
-'''
 
 myStreams['ID1'] = 'http://User:FlitzPiep3@101.64.18.101:8008/axis-cgi/mjpg/video.cgi'
 myStreams['ID2'] = 'http://User:FlitzPiep3@101.64.18.105/GetData.cgi?Status=0'
 myStreams['ID3'] = 'http://User:FlitzPiep3@101.64.18.103/axis-cgi/mjpg/video.cgi'
+'''
+
+# Read Cam-Config
+with open('/var/www/html/'+smartvisu_dir+'/pages/'+myActPages+'/camservice.cfg') as cfg_file:
+        myStreams = json.load(cfg_file)
+cfg_file.close()
 
 myClients = []
 myActiveCams     = []
 myActiveCamNames = []
+myStats = []
+myClientStats = []
+myCamStats = []
 myLock = False
 
+##################################
+# Class for statistic-thread
+##################################            
+
+class stat_handler(threading.Thread):
+    def __init__(self,myCpuArray,myClientArray,myCamsArray):
+        threading.Thread.__init__(self)
+        self.myCpuAray = myCpuArray
+        self.Clients   = myClientArray
+        self.Cams      = myCamsArray
+        self._datlength= 1800 
+
+    def run(self):
+        self.alive = True
+        print ('stat-started')
+        while self.alive == True:
+	    ##################################
+	    # build TimeStamp & get CPU-Load
+	    ##################################
+            dt = datetime.datetime.now()
+            _timeStamp = int(time.mktime(dt.timetuple())) * 1000 + int(dt.microsecond / 1000)
+            _CpuLoad = psutil.cpu_percent()
+	    ##################################
+	    # count the Cpu-Load
+	    ##################################	    
+            actArray = [_timeStamp, _CpuLoad]
+            if len(self.myCpuAray) < self._datlength:
+                self.myCpuAray.append(actArray)
+            else:
+                myDummy = self.myCpuAray[1:]
+                self.myCpuAray= myDummy
+                self.myCpuAray.append(actArray)
+
+	    ##################################
+	    # count the active Clients
+	    ##################################	    
+            global myClients
+            actArray = [_timeStamp, len(myClients)]
+            if len(self.Clients) < self._datlength:
+                self.Clients.append(actArray)
+            else:
+                myDummy = self.Clients[1:]
+                self.Clients= myDummy
+                self.Clients.append(actArray)
+	    ##################################
+            # count the active Cams
+	    ##################################            
+            global myActiveCams
+            activeCams = 0
+            for cam in myActiveCams:
+            	if cam.alive:
+            		activeCams +=1
+            actArray = [_timeStamp, activeCams]
+            if len(self.Cams) < self._datlength:
+                self.Cams.append(actArray)
+            else:
+                myDummy = self.Cams[1:]
+                self.Cams= myDummy
+                self.Cams.append(actArray)            
+            time.sleep(1)
+    def stop(self):
+        self.alive = False
+
+##################################
+# Start the statistic-thread
+##################################            
+
+myStat = stat_handler(myStats,myClientStats,myCamStats)
+myStat.start()
+
+##################################
+# the Url & functions for flask
+##################################            
+@app.route('/status')
+def status():
+    myReponse = {
+                    'Status' : 'running',
+                    'cpuload': myStat.myCpuAray,
+                    'actCams' : myStat.Cams,
+                    'actClients' : myStat.Clients
+                }
+    
+    return jsonify(myReponse)
 
 @app.after_request
 def response_processor(response):
     # Prepare all the local variables you need since the request context
     # will be gone in the callback function
     global myClients
-    myId = uuid.uuid4().hex
-    myClients.append(myId)
-    response.headers["X-API-KEY"] = myId 
-    print ('act.Clients : ' + str(myClients))
+    if 'multipart/x-mixed-replace' in response.headers['Content-Type']:
+        myId = uuid.uuid4().hex
+        myClients.append(myId)
+        response.headers["X-API-KEY"] = myId
+        print ('act.Clients : ' + str(myClients))
 
     @response.call_on_close
     def process_after_request():
         # Do whatever is necessary here
         time.sleep(0.5)
-        myId = response.headers['X-API-KEY']
-        print ('after_request - ' + str(myId))
-        global myClients
-        myClients.remove(myId)
-        print ('act.Clients : ' + str(myClients))
+        if 'multipart/x-mixed-replace' in response.headers['Content-Type']:
+            myId = response.headers['X-API-KEY']
+            print ('after_request - ' + str(myId))
+            global myClients
+            myClients.remove(myId)
+            print ('act.Clients : ' + str(myClients))
         pass
 
     return response
@@ -71,16 +164,6 @@ def response_processor(response):
 def index():
     """Video streaming home page."""
     return render_template('index.html')
-
-
-def gen(camera):
-    """Video streaming generator function."""
-    i=1
-    yield b'--frame\r\n'
-    while True:
-        i +=1
-        frame = camera.get_frame()
-        yield b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n--frame\r\n'
 
 
 
@@ -114,9 +197,9 @@ def video_feed():
             myCam = myActiveCams[myActiveCamNames.index(myStream)]
         else: # add new Cam
             myLock = True
-            print ('Setup new Cam for : '+myStreams[myStream])
+            print ('Setup new Cam for : '+myStreams[myStream]['url'])
             myActiveCamNames.append(myStream)
-            myActiveCams.append(BaseCamera(myStreams[myStream],myStream,myTempPath))
+            myActiveCams.append(BaseCamera(myStreams[myStream]['url'],myStream,myTempPath))
             myCam = myActiveCams[myActiveCamNames.index(myStream)]
             myLock = False
 
@@ -141,6 +224,17 @@ def video_feed():
         myResponse.headers['Content-Type'] = 'image/png'
 
         return myResponse
+
+def gen(camera):
+    """Video streaming generator function."""
+    i=1
+    yield b'--frame\r\n'
+    while True:
+        i +=1
+        frame = camera.get_frame()
+        yield b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n--frame\r\n'
+
+
 
 if __name__ == '__main__':
     app.run()
