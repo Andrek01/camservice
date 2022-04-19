@@ -18,18 +18,21 @@ import io, json
 # get the active pages
 
 app = Flask(__name__)
-print (app.config.get('SERVER_NAME', 'some.sensible.default.domain'))
+
+
+
+smartvisu_dir =  os.environ.get('dir_smartvisu')
+print ('smartvisu_dir : ' + smartvisu_dir)
 
 filename = app.instance_path
 print('Instance_Path : ' + filename)
 myTempPath = "/".join(app.instance_path.split("/")[:-1])+"/tmp/"
 print ('Tmp-Path : ' + myTempPath)
-myResponse = requests.get('http://127.0.0.1/smartvisu3.2/lib/flaskapps/camservice/camservice.php?command=get_page_path')
+myResponse = requests.get('http://127.0.0.1/{}/lib/flaskapps/camservice/camservice.php?command=get_page_path'.format(smartvisu_dir))
 myActPages = myResponse.content.decode()
 myActPages = myActPages.split("\n")[0]
 print ('active Pages : ' + myActPages)
 
-smartvisu_dir = 'smartvisu3.2'
 '''
 myStreams = {}
 
@@ -39,9 +42,12 @@ myStreams['ID3'] = 'http://User:FlitzPiep3@101.64.18.103/axis-cgi/mjpg/video.cgi
 '''
 
 # Read Cam-Config
-with open('/var/www/html/'+smartvisu_dir+'/pages/'+myActPages+'/camservice.cfg') as cfg_file:
-        myStreams = json.load(cfg_file)
-cfg_file.close()
+try:
+    with open('/var/www/html/'+smartvisu_dir+'/pages/'+myActPages+'/camservice.cfg') as cfg_file:
+            myStreams = json.load(cfg_file)
+    cfg_file.close()
+except:
+    pass
 
 myClients = []
 myActiveCams     = []

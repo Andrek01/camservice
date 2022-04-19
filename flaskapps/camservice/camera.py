@@ -111,6 +111,8 @@ class BaseCamera(object):
                         img = cv2.imdecode(np.frombuffer(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
                         cv2.imwrite(self.tmpPath+self.StreamID+'.jpg',img)
                     yield jpg 
+            self.last_access = time.time()
+            print ('http-Stream was ended')
         else:        
             camera = cv2.VideoCapture(self.source)
             if not camera.isOpened():
@@ -122,8 +124,8 @@ class BaseCamera(object):
                 #imS = cv2.resize(img, (800, 600))
                 imS = img
                 # If first Frame take a snapshot
-                if first_run == True:
-                    first_run = False
+                if self.first_run == True:
+                    self.first_run = False
                     cv2.imwrite(self.tmpPath+self.StreamID+'.jpg',img)
                 
                 actTime = datetime.datetime.now().strftime("%d.%m.%Y / %H:%M:%S")

@@ -1,0 +1,36 @@
+/**
+* -----------------------------------------------------------------------------
+* @package     smartVISU
+* @author      Martin Gleiß
+* @copyright   2012 - 2015
+* @license     GPL [http://www.gnu.de]
+* -----------------------------------------------------------------------------
+*/
+
+/**
+* Displays an camera-stream which is provided by the camservice
+*
+* @param {id=} unique id for this widget
+* @param {text} the path/url item to the image from the camservice (./lib/camservice/video_feed?stream=789789789798)
+* @param {text(false,true)=true} show the control buttons for start/stop (default 'true' )
+*
+*
+* @author Andre Kohler
+* @info Thanks to Miquel
+*/
+{% macro camservice(id, src, controls) %}
+  <div {% if not id is empty %} id="{{ uid(page, id) }}"{% endif %}
+	data-widget="multimedia.camservice" alt="multimedia.camservice"
+	data-url="{% if '/' in src or '\\' in src %}{{ src }}{% endif %}"
+	onerror="javascript:this.src='{{ default_img|default('pages/base/pics/trans.png') }}'" > 
+	<img src="pages/base/pics/trans.png" style="width:100%"> </img>
+	{% if controls == 'true' or controls == 'True' %}
+	<table width=40% style="font-size:12px;margin-left: auto;margin-right: auto;">
+	<tr>
+	<td width=20%> <button type="button" id="play" >Play</button></td>
+	<td width=20%> <button type="button" id="stop">Stop</button></td>
+	</tr>		
+	</table>		
+	{% endif %}
+  </div>
+{% endmacro %}
