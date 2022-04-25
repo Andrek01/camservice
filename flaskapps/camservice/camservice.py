@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-#from importlib import import_module
 import os
 import requests
 from flask import Flask, render_template, Response, request, make_response, jsonify
@@ -172,14 +171,22 @@ def index():
     return render_template('index.html')
 
 
-
+@app.route('/changeatonce', methods=['GET', 'POST'])
+def changeatonce():
+    content = request.get_json()
+    print(content)
+    myReponse = {
+                    'Status' : 'OK'
+                }
+    
+    return jsonify(myReponse)
+    
 @app.route('/video_feed')
 def video_feed():
     """Video streaming route. Put this in the src attribute of an img tag."""
     print ('ip : '+ request.remote_addr + 'port : ' + str(request.environ.get('REMOTE_PORT')))
     print ('got Args : ' + str(request.args))
     myStream = request.args.get('stream')
-    myClient = request.args.get('client')
     myCmd    = request.args.get('command')
     print ('got Stream ID:'+ str(myStream))
     print ('got Command  :'+ str(myCmd))
@@ -205,17 +212,16 @@ def video_feed():
             myLock = True
             print ('Setup new Cam for : '+myStreams[myStream]['url'])
             myActiveCamNames.append(myStream)
-            myActiveCams.append(BaseCamera(myStreams[myStream]['url'],myStream,myTempPath))
+            myActiveCams.append(BaseCamera(myStreams[myStream]['url'],myStream,myTempPath,myStreams[myStream]['settings'] ))
             myCam = myActiveCams[myActiveCamNames.index(myStream)]
             myLock = False
 
-        #myClients.append(myClient)
-        #print ('act.Clients : ' + str(myClients))
+        
+        
         return Response(gen(myCam), mimetype='multipart/x-mixed-replace; boundary=frame')
 
 
     if myCmd == 'stop':
-        #myClients.remove(myClient)
         img = cv2.imread(myTempPath+myStream+'.jpg')
         dimensions = img.shape
         x_Text = int(dimensions[1]/2)-int(dimensions[1]*0.37)

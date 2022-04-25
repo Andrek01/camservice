@@ -59,10 +59,11 @@ class CameraEvent(object):
 
 class BaseCamera(object):
 
-    def __init__(self,source,StreamID,tmpPath):
+    def __init__(self,source,StreamID,tmpPath,mySettings):
         self.source = source
         self.StreamID = StreamID
         self.tmpPath  = tmpPath
+        self.settings = mySettings
         self.alive = True
         self.thread = None  # background thread that reads frames from camera
         self.frame = None  # current frame is stored here by background thread

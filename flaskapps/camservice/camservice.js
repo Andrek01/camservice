@@ -27,7 +27,7 @@
 </td>\
 <td style="width:14%">\
   <div class="ui-field-contain">\
-      <select id="driver-{id}" name="driver" data-native-menu="false" style="font-size:small">\
+      <select id="driver-{id}" name="driver" data-native-menu="false" style="font-size:small" onchange="selectChanged(this)">\
               <option value="1" selected="selected">Requests</option>\
               <option value="2">OpenCV</option>\
       </select>\
@@ -38,14 +38,14 @@
 </td>\
 <td style="width:14%">\
   <div class="ui-field-contain">\
-      <select id="type-{id}" name="type" data-native-menu="false">\
+      <select id="type-{id}" name="type" data-native-menu="false" onchange="selectChanged(this)">\
               <option value="1" selected="selected"  style="font-size:small">Stream</option>\
               <option value="2"  style="font-size:small">Snapshot</option>\
       </select>\
   </div>\
 </td>\
 <td style="width:5%">\
-  <input id="addText-{id}" type="checkbox">\
+  <input id="addText-{id}" type="checkbox" onChange="checkBoxChanged(this)">\
 </td>\
 <td style="width:6%">\
  add Text\
@@ -61,7 +61,7 @@
           Text\
         </td>\
         <td colspan=3>\
-          <input id="text-{id}" type="text" value="">\
+          <input id="text-{id}" type="text" value="" onInput="textChanged(this)">\
         </td>\
       </tr>\
       <tr>\
@@ -69,13 +69,13 @@
           X-Pos\
         </td>\
         <td style="width:25%;padding-left:15px">\
-          <input id="TextPosX-{id}"  name="lbl-input2" type="text" value="10">\
+          <input id="TextPosX-{id}"  name="lbl-input2" type="text" value="10" onInput="textChanged(this)">\
         </td>\
         <td style="width:25%;padding-left:15px">\
           Y-Pos\
         </td>\
         <td style="width:25%;padding-left:15px">\
-          <input id="TextPosY-{id}"  name="lbl-input2" type="text" value="10">\
+          <input id="TextPosY-{id}"  name="lbl-input2" type="text" value="10" onInput="textChanged(this)">\
         </td>\
       </tr>\
       <tr>\
@@ -84,13 +84,13 @@
           Font-Size\
         </td>\
         <td style="width:25%;padding-left:15px">\
-          <input id="TextFontSize-{id}"  name="lbl-input2" type="text" value="3">\
+          <input id="TextFontSize-{id}"  name="lbl-input2" type="text" value="3" onInput="textChanged(this)">\
         </td>\
         <td style="width:25%;padding-left:15px">\
           Thickness\
         </td>\
         <td style="width:25%;padding-left:15px">\
-          <input id="TextFontThickness-{id}"  name="lbl-input2" type="text" value="0.8">\
+          <input id="TextFontThickness-{id}"  name="lbl-input2" type="text" value="0.8" onInput="textChanged(this)">\
         </td>\
       </tr>\
       <tr>\
@@ -107,7 +107,7 @@
   </div>\
 </td>\
 <td style="width:5%">\
-  <input id="addDate-{id}" type="checkbox" name="">\
+  <input id="addDate-{id}" type="checkbox" name="" onChange="checkBoxChanged(this)">\
 </td>\
 <td style="width:6%">\
   add Date\
@@ -123,13 +123,13 @@
           X-Pos\
         </td>\
         <td style="width:25%;padding-left:15px">\
-          <input id="DatePosX-{id}"  name="lbl-input2" type="text" value="100">\
+          <input id="DatePosX-{id}"  name="lbl-input2" type="text" value="100" onInput="textChanged(this)">\
         </td>\
         <td style="width:25%;padding-left:15px">\
           Y-Pos\
         </td>\
         <td style="width:25%;padding-left:15px">\
-          <input id="DatePosY-{id}"  name="lbl-input2" type="text" value="300">\
+          <input id="DatePosY-{id}"  name="lbl-input2" type="text" value="300" onInput="textChanged(this)">\
         </td>\
       </tr>\
       <tr>\
@@ -138,13 +138,13 @@
           Font-Size\
         </td>\
         <td style="width:25%;padding-left:15px">\
-          <input id="DateFontSize-{id}"  name="lbl-input2" type="text" value="2">\
+          <input id="DateFontSize-{id}"  name="lbl-input2" type="text" value="2" onInput="textChanged(this)">\
         </td>\
         <td style="width:25%;padding-left:15px">\
           Thickness\
         </td>\
         <td style="width:25%;padding-left:15px">\
-          <input id="DateFontThickness-{id}"  name="lbl-input2" type="text" value="0.8">\
+          <input id="DateFontThickness-{id}"  name="lbl-input2" type="text" value="0.8" onInput="textChanged(this)">\
         </td>\
       </tr>\
       <tr>\
@@ -207,6 +207,54 @@ $(document).on('pagecontainerbeforetransition', function(event,ui) {
 	}
 });
 
+
+function textChanged(that)
+{
+	console.log("textChanged")
+	myValue = that.value
+	myObjName=that.id.split("-")[1]
+	myJSON = {'ID' : myObjName, 'setting' : that.id.split("-")[0], 'value' : myValue}
+	changeatonce(myJSON)
+}
+
+function checkBoxChanged(that)
+{
+	console.log("checkBoxChanged")
+	myValue = that.checked
+	myObjName=that.id.split("-")[1]
+	myJSON = {'ID' : myObjName, 'setting' : that.id.split("-")[0], 'value' : myValue}
+	changeatonce(myJSON)
+}
+function selectChanged(that)
+{
+	console.log("selectChanged")
+	myValue = that.value
+	myObjName=that.id.split("-")[1]
+	myJSON = {'ID' : myObjName, 'setting' : that.id.split("-")[0], 'value' : myValue}
+	changeatonce(myJSON)
+}
+
+
+function changeatonce(myJson)
+{
+	$.ajax({
+    url: "./camservice/changeatonce",
+    type: "POST",
+    data:  JSON.stringify(myJson),
+    contentType: "application/json; charset=utf-8",
+    success: function (response) {
+    	console.log("OK");
+    },
+    error: function () {
+        console.log("Error - while getting Status")
+        _Status = "Error - Service not running"
+        $('#Status')[0].innerHTML= -Status
+    		$('#Status')[0].style.color="red"
+    		$('#StatusHeadline')[0].innerHTML=_Status
+    		$('#StatusHeadline')[0].style.color="red"
+    }
+ });
+}
 
 
 function uuidv4() {
