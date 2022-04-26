@@ -9,7 +9,6 @@ sed '/Camservice-injected/,$d' ./widgets/multimedia.html > ./widgets/multimedia.
 mv  ./widgets/multimedia.tmp  ./widgets/multimedia.html
 cat ./lib/flaskapps/camservice/dropins/camservice.html >> ./widgets/multimedia.html
 
-exit 0
 echo "Creating *.wsgi-File for Service"
 sed -e s/smartvisu_dir/$actPath/g ./lib/flaskapps/camservice/scripts/camservice.wsgi > ./camservice.tmp
 mv ./camservice.tmp ./lib/flaskapps/camservice/camservice.wsgi
