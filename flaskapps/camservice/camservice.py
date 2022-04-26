@@ -72,15 +72,15 @@ class stat_handler(threading.Thread):
         self.alive = True
         print ('stat-started')
         while self.alive == True:
-	    ##################################
-	    # build TimeStamp & get CPU-Load
-	    ##################################
+        ##################################
+        # build TimeStamp & get CPU-Load
+        ##################################
             dt = datetime.datetime.now()
             _timeStamp = int(time.mktime(dt.timetuple())) * 1000 + int(dt.microsecond / 1000)
             _CpuLoad = psutil.cpu_percent()
-	    ##################################
-	    # count the Cpu-Load
-	    ##################################	    
+        ##################################
+        # count the Cpu-Load
+        ##################################
             actArray = [_timeStamp, _CpuLoad]
             if len(self.myCpuAray) < self._datlength:
                 self.myCpuAray.append(actArray)
@@ -89,9 +89,9 @@ class stat_handler(threading.Thread):
                 self.myCpuAray= myDummy
                 self.myCpuAray.append(actArray)
 
-	    ##################################
-	    # count the active Clients
-	    ##################################	    
+        ##################################
+        # count the active Clients
+        ##################################
             global myClients
             actArray = [_timeStamp, len(myClients)]
             if len(self.Clients) < self._datlength:
@@ -100,14 +100,14 @@ class stat_handler(threading.Thread):
                 myDummy = self.Clients[1:]
                 self.Clients= myDummy
                 self.Clients.append(actArray)
-	    ##################################
+        ##################################
             # count the active Cams
-	    ##################################            
+        ##################################
             global myActiveCams
             activeCams = 0
             for cam in myActiveCams:
-            	if cam.alive:
-            		activeCams +=1
+                if cam.alive:
+                    activeCams +=1
             actArray = [_timeStamp, activeCams]
             if len(self.Cams) < self._datlength:
                 self.Cams.append(actArray)
@@ -175,6 +175,12 @@ def index():
 def changeatonce():
     content = request.get_json()
     print(content)
+    newSetting = content
+    if (newSetting['ID'] in myActiveCamNames):
+        try:
+            myActiveCams[myActiveCamNames.index(newSetting['ID'])].settings[newSetting['setting']] = newSetting['value']
+        except:
+            print ('Error while changing settings immediate')
     myReponse = {
                     'Status' : 'OK'
                 }

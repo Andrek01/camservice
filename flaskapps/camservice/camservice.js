@@ -61,7 +61,7 @@
           Text\
         </td>\
         <td colspan=3>\
-          <input id="text-{id}" type="text" value="" onInput="textChanged(this)">\
+          <input id="text-{id}" type="text" value="" onBlur="textChanged(this)">\
         </td>\
       </tr>\
       <tr>\
@@ -69,13 +69,13 @@
           X-Pos\
         </td>\
         <td style="width:25%;padding-left:15px">\
-          <input id="TextPosX-{id}"  name="lbl-input2" type="text" value="10" onInput="textChanged(this)">\
+          <input id="TextPosX-{id}"  name="lbl-input2" type="text" value="10" onBlur="textChanged(this)">\
         </td>\
         <td style="width:25%;padding-left:15px">\
           Y-Pos\
         </td>\
         <td style="width:25%;padding-left:15px">\
-          <input id="TextPosY-{id}"  name="lbl-input2" type="text" value="10" onInput="textChanged(this)">\
+          <input id="TextPosY-{id}"  name="lbl-input2" type="text" value="10" onBlur="textChanged(this)">\
         </td>\
       </tr>\
       <tr>\
@@ -84,13 +84,13 @@
           Font-Size\
         </td>\
         <td style="width:25%;padding-left:15px">\
-          <input id="TextFontSize-{id}"  name="lbl-input2" type="text" value="3" onInput="textChanged(this)">\
+          <input id="TextFontSize-{id}"  name="lbl-input2" type="text" value="3" onBlur="textChanged(this)">\
         </td>\
         <td style="width:25%;padding-left:15px">\
           Thickness\
         </td>\
         <td style="width:25%;padding-left:15px">\
-          <input id="TextFontThickness-{id}"  name="lbl-input2" type="text" value="0.8" onInput="textChanged(this)">\
+          <input id="TextFontThickness-{id}"  name="lbl-input2" type="text" value="1" onBlur="textChanged(this)">\
         </td>\
       </tr>\
       <tr>\
@@ -123,13 +123,13 @@
           X-Pos\
         </td>\
         <td style="width:25%;padding-left:15px">\
-          <input id="DatePosX-{id}"  name="lbl-input2" type="text" value="100" onInput="textChanged(this)">\
+          <input id="DatePosX-{id}"  name="lbl-input2" type="text" value="100" onBlur="textChanged(this)">\
         </td>\
         <td style="width:25%;padding-left:15px">\
           Y-Pos\
         </td>\
         <td style="width:25%;padding-left:15px">\
-          <input id="DatePosY-{id}"  name="lbl-input2" type="text" value="300" onInput="textChanged(this)">\
+          <input id="DatePosY-{id}"  name="lbl-input2" type="text" value="300" onBlur="textChanged(this)">\
         </td>\
       </tr>\
       <tr>\
@@ -138,13 +138,13 @@
           Font-Size\
         </td>\
         <td style="width:25%;padding-left:15px">\
-          <input id="DateFontSize-{id}"  name="lbl-input2" type="text" value="2" onInput="textChanged(this)">\
+          <input id="DateFontSize-{id}"  name="lbl-input2" type="text" value="2" onBlur="textChanged(this)">\
         </td>\
         <td style="width:25%;padding-left:15px">\
           Thickness\
         </td>\
         <td style="width:25%;padding-left:15px">\
-          <input id="DateFontThickness-{id}"  name="lbl-input2" type="text" value="0.8" onInput="textChanged(this)">\
+          <input id="DateFontThickness-{id}"  name="lbl-input2" type="text" value="1" onBlur="textChanged(this)">\
         </td>\
       </tr>\
       <tr>\
@@ -227,11 +227,13 @@ function checkBoxChanged(that)
 }
 function selectChanged(that)
 {
+	/*
 	console.log("selectChanged")
 	myValue = that.value
 	myObjName=that.id.split("-")[1]
 	myJSON = {'ID' : myObjName, 'setting' : that.id.split("-")[0], 'value' : myValue}
 	changeatonce(myJSON)
+	*/
 }
 
 
@@ -622,9 +624,14 @@ function GetColor(button) {
           self._mem = values;
 				}
 
-//				$(this).remove();
+
 				myColor = rgbToHex(values[0],values[1],values[2])
 				myColorButton.style.backgroundColor=myColor
+				// Send Value immediate
+				
+				myObjName=myColorButton.id.split("-")[1]
+				myJSON = {'ID' : myObjName, 'setting' : myColorButton.id.split("-")[0], 'value' : myColor}
+				changeatonce(myJSON)
 			}
 		 })
 		 

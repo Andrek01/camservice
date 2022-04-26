@@ -3,30 +3,26 @@ $.widget("sv.multimedia_camservice", $.sv.widget, {
 
   initSelector: '[data-widget="multimedia.camservice"]',
   options: {
-	'uuid' 	: null,
 	'url'	: null
   },
 	
 	_init: function()
 	 {
 	  this._super();
-	  this.options.uuid = ([1e7]+1e3+4e3+8e3+1e11).replace(/[018]/g, c =>
-	  	 (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
 	  if (this.element.attr('data-url'))
       		{
       		this.options.url = this.element.attr('data-url')
-      		img_base = this.options.url + '&client='+ this.options.uuid+'&command=play' ;
+      		img_base = this.options.url + '&command=play' ;
       		this.bindings[0].childNodes[1].src = img_base
       		}
 	 },
 	
 	_update:
 	function(response) {
-	  	this.options.uuid = _GetUUID()
 		var widget_url = this.element.attr('data-url');
 		if (widget_url)
 		{
-			var img_base = widget_url + '&client='+ this.options.uuid+'&command=play' ;
+			var img_base = widget_url + '&command=play' ;
 		}
 		else
 		{
@@ -38,6 +34,22 @@ $.widget("sv.multimedia_camservice", $.sv.widget, {
     
 	_exit: function(){
 		console.log('Exit Function');
+		myUrl=this.bindings[0].childNodes[1].attributes.src.nodeValue.split("&")[0]+"&command=stop"
+		this.bindings[0].childNodes[1].attributes.src.nodeValue= myUrl
+		
+		// prepare Restart of Stream
+		
+		$(document).on('pagecontainerbeforeshow', function () {
+			console.log("onPageBeforeCamService")
+			myActStreams = $(":mobile-pagecontainer").pagecontainer( "getActivePage" ).find('[data-widget="multimedia.camservice"]')
+			for (let i = 0; i < myActStreams.length; i++) {
+					console.log(myActStreams[i].childNodes[1].src)
+					myActStreams[i].childNodes[1].src = myActStreams[i].childNodes[1].src.split("&")[0]+"&command=play" 
+					} 
+				
+                             
+		});
+		
 	},
 	_events: {
 	'click': function (event) {
@@ -52,7 +64,7 @@ $.widget("sv.multimedia_camservice", $.sv.widget, {
 		  	console.log('Button Play')
 		  	if (myUrl.search("stop") != -1)
 		  	{		  	
-		  	newUrl = myUrl.replace("command=stop","command=play")+"&seq=1"
+		  	newUrl = this.bindings[0].childNodes[1].attributes.src.nodeValue.split("&")[0] +"&command=play"+"&seq=" + new Date().getTime();
 			this.bindings[0].childNodes[1].attributes.src.nodeValue= newUrl
 			}
 		  	break
@@ -62,7 +74,7 @@ $.widget("sv.multimedia_camservice", $.sv.widget, {
 		  	console.log('Button Stop')
 		  	if (myUrl.search("play") != -1)
 		  	{
-		  	newUrl = myUrl.replace("command=play","command=stop")		  	
+		  	newUrl = this.bindings[0].childNodes[1].attributes.src.nodeValue.split("&")[0] +"&command=stop"
 			this.bindings[0].childNodes[1].attributes.src.nodeValue= newUrl
 			}
 		 	break
@@ -72,11 +84,6 @@ $.widget("sv.multimedia_camservice", $.sv.widget, {
 		 }
 		}
 
-	},
-	//*****************************************************
-	// function for drawing the time-table
-	//*****************************************************
-	_GetUUID: function () {	
-		return ([1e7]+1e3+4e3+8e3+1e11).replace(/[018]/g, c => (c ^ crypto.getRandomValues(new Uint8Array(1))[0] & 15 >> c / 4).toString(16));
 	}
+
 });

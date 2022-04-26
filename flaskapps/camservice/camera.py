@@ -91,11 +91,43 @@ class BaseCamera(object):
 
         return self.frame
 
+    def hex_to_rgb(self,value):
+        value = value.lstrip('#')
+        lv = len(value)
+        myRGB =  tuple(int(value[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
+        # change to BGR
+        myBGR = [myRGB[2],myRGB[1],myRGB[0]]
+        return tuple(myBGR)
+
+    def addDate2Stream(self,img):
+        actTime = datetime.datetime.now().strftime("%d.%m.%Y / %H:%M:%S")
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_Thickness = int(self.settings['DateFontThickness'])
+        font_Size = int(self.settings['DateFontSize'])
+        font_Color = self.hex_to_rgb(self.settings['DateColor'])
+        x_Text = int(self.settings['DatePosX'])
+        y_Text = int(self.settings['DatePosY'])
+        cv2.putText(img, actTime, (x_Text, y_Text), font, font_Size, font_Color, font_Thickness,
+                    cv2.LINE_AA)
+        return img
+
+    def addText2Stream(self,img):
+        actTime = datetime.datetime.now().strftime("%d.%m.%Y / %H:%M:%S")
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_Thickness = int(self.settings['TextFontThickness'])
+        font_Size = int(self.settings['TextFontSize'])
+        font_Color = self.hex_to_rgb(self.settings['TextColor'])
+        x_Text = int(self.settings['TextPosX'])
+        y_Text = int(self.settings['TextPosY'])
+        cv2.putText(img, self.settings['text'], (x_Text, y_Text), font, font_Size, font_Color, font_Thickness,
+                    cv2.LINE_AA)
+        return img
+
     #@staticmethod
     def frames(self):
         print ('opening Stream :' +self.source )
         self.first_run = True
-        if 'http' in self.source:
+        if self.settings['driver'] == "1":                # use requests
             stream = requests.get(self.source,stream=True)
             bytes = b''
             for chunk in stream.iter_content(chunk_size=1024):
@@ -111,10 +143,17 @@ class BaseCamera(object):
                         self.first_run = False
                         img = cv2.imdecode(np.frombuffer(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
                         cv2.imwrite(self.tmpPath+self.StreamID+'.jpg',img)
-                    yield jpg 
+                    if (self.settings['addDate'] == True or self.settings['addText'] == True):
+                        imS = cv2.imdecode(np.frombuffer(jpg, dtype=np.uint8), cv2.IMREAD_COLOR)
+                        if (self.settings['addDate'] == True):
+                            imS = self.addDate2Stream(imS)
+                        if (self.settings['addText'] == True):
+                            imS = self.addText2Stream(imS)
+                        jpg = cv2.imencode('.jpg', imS)[1].tobytes()
+                    yield jpg
             self.last_access = time.time()
             print ('http-Stream was ended')
-        else:        
+        else:                                           # use opencv
             camera = cv2.VideoCapture(self.source)
             if not camera.isOpened():
                 raise RuntimeError('Could not start camera.')
@@ -129,9 +168,13 @@ class BaseCamera(object):
                     self.first_run = False
                     cv2.imwrite(self.tmpPath+self.StreamID+'.jpg',img)
                 
-                actTime = datetime.datetime.now().strftime("%d.%m.%Y / %H:%M:%S")
-                font = cv2.FONT_HERSHEY_SIMPLEX
-                cv2.putText(imS, actTime, (10,30), font, 0.4, (248, 248, 255), 1, cv2.LINE_AA)
+                #actTime = datetime.datetime.now().strftime("%d.%m.%Y / %H:%M:%S")
+                #font = cv2.FONT_HERSHEY_SIMPLEX
+                #cv2.putText(imS, actTime, (10,30), font, 0.4, (248, 248, 255), 1, cv2.LINE_AA)
+                if (self.settings['addDate'] == True):
+                    imS = self.addDate2Stream(imS)
+                if (self.settings['addText'] == True):
+                    imS = self.addText2Stream(imS)
                 # encode as a jpeg image and return it
                 yield cv2.imencode('.jpg', imS)[1].tobytes()
 

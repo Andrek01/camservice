@@ -1,13 +1,4 @@
-/**
-* -----------------------------------------------------------------------------
-* @package     smartVISU
-* @author      Martin Gleiß
-* @copyright   2012 - 2015
-* @license     GPL [http://www.gnu.de]
-* -----------------------------------------------------------------------------
-*/
-
-/**
+/** Camservice-injected
 * Displays an camera-stream which is provided by the camservice
 *
 * @param {id=} unique id for this widget
@@ -16,10 +7,10 @@
 *
 *
 * @author Andre Kohler
-* @info Thanks to Miquel
 */
 {% macro camservice(id, src, controls) %}
-  <div {% if not id is empty %} id="{{ uid(page, id) }}"{% endif %}
+  <div class="camservice-widget"
+	{% if not id is empty %} id="{{ uid(page, id) }}" {% endif %} 
 	data-widget="multimedia.camservice" alt="multimedia.camservice"
 	data-url="{% if '/' in src or '\\' in src %}{{ src }}{% endif %}"
 	onerror="javascript:this.src='{{ default_img|default('pages/base/pics/trans.png') }}'" > 
