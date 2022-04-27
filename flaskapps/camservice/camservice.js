@@ -40,7 +40,7 @@
   <div class="ui-field-contain">\
       <select id="type-{id}" name="type" data-native-menu="false" onchange="selectChanged(this)">\
               <option value="1" selected="selected"  style="font-size:small">Stream</option>\
-              <option value="2"  style="font-size:small">Snapshot</option>\
+              <option value="2" style="font-size:small">Snapshot</option>\
       </select>\
   </div>\
 </td>\
@@ -651,6 +651,7 @@ function rgbToHex(r, g, b) {
 function previewStream(button)
 {
   console.log('Stream-Button-pressed')
+  $("#stop").click()
   myStreamId=button.id.split("-")[1]
   myStream = document.getElementById("input-Id0-"+myStreamId).value
   previewSrc=$(":mobile-pagecontainer").pagecontainer( "getActivePage" ).find('[data-widget]')[2] 

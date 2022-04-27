@@ -189,18 +189,44 @@ def changeatonce():
     
 @app.route('/video_feed')
 def video_feed():
-    """Video streaming route. Put this in the src attribute of an img tag."""
     print ('ip : '+ request.remote_addr + 'port : ' + str(request.environ.get('REMOTE_PORT')))
     print ('got Args : ' + str(request.args))
-    myStream = request.args.get('stream')
-    myCmd    = request.args.get('command')
+    myStream = ''
+    myCmd    = ''
+    try:
+        myStream = request.args.get('stream')
+        myCmd    = request.args.get('command')
+    except:
+        pass
+    if (myCmd == "" or myCmd == None):
+        myCmd = "play"
+    if (myStream == "" or myStream == None):
+        print ('got no Stream-ID')
+        myPath = "/".join(app.instance_path.split("/")[:-4])+"/pages/base/pics/"
+        print (myPath)
+        img = cv2.imread(myPath+'smartvisu_xl.png')
+        dimensions = img.shape
+        x_Text = int(dimensions[1]/2)-int(dimensions[1]*0.37)
+        y_Text = int(dimensions[0]/2)-50
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        font_Thickness = int(dimensions[1]/100)
+        font_Size      = round(dimensions[1]/400,1)
+        cv2.putText(img, 'sorry, got no Stream-ID', (x_Text,y_Text), font, font_Size, (000, 000, 255), font_Thickness, cv2.LINE_AA)
+        print ('act.Clients : ' + str(myClients))
+        ret, buffer = cv2.imencode('.png', img)
+        myResponse = make_response(buffer.tobytes())
+        myResponse.headers['Content-Type'] = 'image/png'
+        return myReponse
+        
     print ('got Stream ID:'+ str(myStream))
     print ('got Command  :'+ str(myCmd))
+    
     print (str(myActiveCams) + ' / ' + str(myActiveCamNames))
-
+    
+    
 
     global myLock
-    if myCmd == 'play':
+    if myCmd == 'play' and myStreams[myStream]['settings']['type'] == "1":              # Stream-Type
         while myLock == True:
             time.sleep(0.1)
         if myStream in myActiveCamNames:
@@ -226,9 +252,35 @@ def video_feed():
         
         return Response(gen(myCam), mimetype='multipart/x-mixed-replace; boundary=frame')
 
+    if myCmd == 'play' and myStreams[myStream]['settings']['type'] == "2":              # snapshot-Type
+        
+        if (myStreams[myStream]['settings']['driver'] == "1"):                            # use request
+            try:
+                response = requests.get(myStreams[myStream]['url'])
+                img = response.content
+            except:
+                myPath = "/".join(app.instance_path.split("/")[:-4])+"/pages/base/pics/"
+                img = cv2.imread(myPath+'smartvisu_xl.png')
+            
+        
+        if (myStreams[myStream]['settings']['driver'] == "2"):                            # use OpenCV
+            camera = cv2.VideoCapture(myStreams[myStream]['url'])
+            if camera.isOpened():
+                _, pic = camera.read()
+                img = cv2.imencode('.jpg', pic)[1].tobytes()
+        
+        myResponse = make_response(img)
+        myResponse.headers['Content-Type'] = 'image/jpg'
+
+        return myResponse
 
     if myCmd == 'stop':
-        img = cv2.imread(myTempPath+myStream+'.jpg')
+        if (os.path.exists(myTempPath+myStream+'.jpg') == True):
+            img = cv2.imread(myTempPath+myStream+'.jpg')
+        else:
+            myPath = "/".join(app.instance_path.split("/")[:-4])+"/pages/base/pics/"
+            print (myPath)
+            img = cv2.imread(myPath+'smartvisu_xl.png')
         dimensions = img.shape
         x_Text = int(dimensions[1]/2)-int(dimensions[1]*0.37)
         y_Text = int(dimensions[0]/2)-50
@@ -237,7 +289,7 @@ def video_feed():
         font_Size      = round(dimensions[1]/400,1)
         cv2.putText(img, 'to be continued...', (x_Text,y_Text), font, font_Size, (248, 248, 255), font_Thickness, cv2.LINE_AA)
         print ('act.Clients : ' + str(myClients))
-        ret, buffer = cv2.imencode('.jpg', img)
+        ret, buffer = cv2.imencode('.png', img)
         myResponse = make_response(buffer.tobytes())
         myResponse.headers['Content-Type'] = 'image/png'
 
