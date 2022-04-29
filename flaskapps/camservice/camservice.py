@@ -9,6 +9,7 @@ import uuid
 import threading, datetime
 import psutil
 import io, json
+import numpy as np
 
 # ****************************
 # Globals for Handling the Cams
@@ -257,10 +258,29 @@ def video_feed():
         if (myStreams[myStream]['settings']['driver'] == "1"):                            # use request
             try:
                 response = requests.get(myStreams[myStream]['url'])
-                img = response.content
-            except:
-                myPath = "/".join(app.instance_path.split("/")[:-4])+"/pages/base/pics/"
-                img = cv2.imread(myPath+'smartvisu_xl.png')
+                print ('Response from request-Snapshot :'+str(response.status_code))
+                if (response.status_code == 200):
+                    img = response.content
+                    if (os.path.exists(myTempPath+myStream+'.jpg') == False):
+                        print ('Start a snapshot to temp-Dir')
+                        jpg = cv2.imdecode(np.frombuffer(img, dtype=np.uint8), cv2.IMREAD_COLOR)
+                        cv2.imwrite(myTempPath+myStream+'.jpg',jpg)
+                        print ('Stored a snapshot to temp-Dir')
+                else:
+                    img = cv2.imread(myTempPath+'background.jpg')
+                    img = cv2.imencode('.jpg', img)[1].tobytes()
+            except Exception as err:
+                print ('Exception {}'.format(err))
+                img = cv2.imread(myTempPath+'background.jpg')
+                dimensions = img.shape
+                x_Text = 20
+                y_Text = int(dimensions[0]/2)-50
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                font_Thickness = int(dimensions[1]/300)
+                font_Size      = round(dimensions[1]/1000,1)
+                cv2.putText(img, 'Error :', (x_Text,y_Text), font, font_Size, (248, 248, 255), font_Thickness, cv2.LINE_AA)
+                cv2.putText(img, '{}'.format(err), (x_Text,y_Text+50), font, font_Size, (248, 248, 255), font_Thickness, cv2.LINE_AA)
+                img = cv2.imencode('.jpg', img)[1].tobytes()
             
         
         if (myStreams[myStream]['settings']['driver'] == "2"):                            # use OpenCV
@@ -268,7 +288,12 @@ def video_feed():
             if camera.isOpened():
                 _, pic = camera.read()
                 img = cv2.imencode('.jpg', pic)[1].tobytes()
-        
+                if (os.path.exists(myTempPath+myStream+'.jpg') == False):
+                    cv2.imwrite(myTempPath+myStream+'.jpg',img)
+            else:
+                img = cv2.imread(myTempPath+'background.jpg')
+                img = cv2.imencode('.jpg', img)[1].tobytes()
+                
         myResponse = make_response(img)
         myResponse.headers['Content-Type'] = 'image/jpg'
 
@@ -278,9 +303,7 @@ def video_feed():
         if (os.path.exists(myTempPath+myStream+'.jpg') == True):
             img = cv2.imread(myTempPath+myStream+'.jpg')
         else:
-            myPath = "/".join(app.instance_path.split("/")[:-4])+"/pages/base/pics/"
-            print (myPath)
-            img = cv2.imread(myPath+'smartvisu_xl.png')
+            img = cv2.imread(myTempPath+'background.jpg')
         dimensions = img.shape
         x_Text = int(dimensions[1]/2)-int(dimensions[1]*0.37)
         y_Text = int(dimensions[0]/2)-50

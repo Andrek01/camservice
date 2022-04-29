@@ -331,14 +331,18 @@ function Cams2Screen(data, addNew)
         myStreams[newStreamID] = {}
         myStreams[newStreamID]['url']='**** NEW ****'
         myHtml2append = myHtml.split("{id}").join(newStreamID)
-				myHtml2append = myHtml2append.split('data-collapsed="true"').join('data-collapsed="false"')
+		myHtml2append = myHtml2append.split('data-collapsed="true"').join('data-collapsed="false"')
 				
         myHtml2append = myHtml2append.split("{Streamid}").join(myStreams[newStreamID].url)
         myHtmlStreams += myHtml2append        
       }
     streamlist = $('.camservice_stream_list');
     streamlist.html(myHtmlStreams).trigger('create');
-		FillValue2Screen(data)
+	if (addNew == true)
+	{
+		document.getElementById("play_Stream-"+newStreamID).disabled=true
+	}
+	FillValue2Screen(data)
 }
 
 function getValuefromScreen()
