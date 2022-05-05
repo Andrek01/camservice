@@ -24,7 +24,7 @@ You only need a python3-Version on your smartVisu-Host. All the needed requireme
 installation-script. All files that will be modified will be saved to *.org Files. The needed python-Flask-App
 runs in an virtual environment which is build by the installation script.
 
-> ## !! Important !!
+> ## :information_source: !! Important !!
 > The installation-script is only able to setup the service for an installation 
 > running the smartvisu on an Apache-Webserver
 > 
